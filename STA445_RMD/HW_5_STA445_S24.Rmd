@@ -1,0 +1,195 @@
+---
+title: "STA 445 S24 Assignment 5"
+author: "April Meadows"
+date: '`r Sys.Date()`'
+output: pdf_document
+---
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(stringr)
+```
+
+## Problem 1
+
+For the following regular expression, explain in words what it matches on. Then add test strings to demonstrate that it in fact does match on the pattern you claim it does.  Do at least 4 tests.  Make sure that your test set of strings has several examples that match as well as several that do not. Make sure to remove the `eval=FALSE` from the R-chunk options.
+
+a. This regular expression matches:  *on the sub-string 'a'*
+
+```{r}
+        strings <- c('banana','orange','melon')
+        data.frame( string = strings ) %>%
+          mutate( result = str_detect(string, 'a') )
+```
+b. This regular expression matches:  *on the sub-string 'ab'*
+
+```{r}
+        strings <- c('abba','crab','banana')
+        data.frame( string = strings ) %>%
+          mutate( result = str_detect(string, 'ab') )
+```
+
+c. This regular expression matches:  *on strings containing the sub-strings 'a' or 'b'*
+
+```{r}
+        strings <- c('abba','cat','bring', 'typewriter')
+        data.frame( string = strings ) %>%
+          mutate( result = str_detect(string, '[ab]') )
+```
+
+d.  This regular expression matches:  *on strings starting with the sub-string 'a'*
+
+```{r}
+        strings <- c('abba','crab','cat','bring', 'typewriter')
+        data.frame( string = strings ) %>%
+          mutate( result = str_detect(string, '^[a]') )
+```
+
+e. This regular expression matches:  *on strings containing a digit, a white space, and the sub-string 'a' or 'A' in that order*
+
+```{r}
+        strings <- c('s 2 abba','2 crab','2acat','bring 2 A', 'typewriter')
+        data.frame( string = strings ) %>%
+          mutate( result = str_detect(string, '\\d+\\s[aA]') )
+```
+
+f. This regular expression matches:  *on strings containing one or more digits, zero or more white spaces, and starting with the sub-string 'a' or 'A' *
+
+```{r, eval=FALSE}
+        strings <- c('s 2 abba','2 crab','2acat','bring 2 A')
+        data.frame( string = strings ) %>%
+          mutate( result = str_detect(string, '\\d+\\s*[aA]') )
+```
+
+g. This regular expression matches:  *on strings containing 0 or more characters*
+
+```{r}
+        strings <- c('','2 crab','2acat','bring 2 A')
+        data.frame( string = strings ) %>%
+      mutate( result = str_detect(string, '.*') )
+```
+
+h. This regular expression matches: *on two repetitions of an alphanumeric character with the substring 'bar' in it*
+
+```{r, eval=FALSE}
+        strings <- c('aa bar','aabar','22 bar','22bar')
+        data.frame( string = strings ) %>%
+          mutate( result = str_detect(string, '^\\w{2}bar') )
+```
+
+i. This regular expression matches: *on the substring 'foo.bar' or on strings beginning with two repetitions of an alphanumeric character and the substring 'bar'*
+
+```{r}
+        strings <- c('oobar','foobar','foo7bar','foo.bar','22bar')
+        data.frame( string = strings ) %>%
+          mutate( result = str_detect(string, '(foo\\.bar)|(^\\w{2}bar)') )
+```
+    
+## Problem 2
+
+The following file names were used in a camera trap study. The S number represents the site, P is the plot within a site, C is the camera number within the plot, the first string of numbers is the YearMonthDay and the second string of numbers is the HourMinuteSecond.
+
+```{r}
+# create filenames character with needed data inside
+    file.names <- c( 'S123.P2.C10_20120621_213422.jpg',
+                     'S10.P1.C1_20120622_050148.jpg',
+                 'S187.P2.C2_20120702_023501.jpg')
+```
+    
+Produce a data frame with columns corresponding to the `site`, `plot`, `camera`, `year`, `month`, `day`, `hour`, `minute`, and `second` for these three file names. So we want to produce code that will create the data frame:
+    
+```{r, eval=FALSE}
+     Site Plot Camera Year Month Day Hour Minute Second
+     S123   P2    C10 2012    06  21   21     34     22
+      S10   P1     C1 2012    06  22   05     01     48
+      S187   P2     C2 2012    07  02   02     35     01
+```
+
+```{r}
+# isolate site and plot data from filenames, separating the character via .
+df <- data.frame( name = file.names) %>%
+      cbind(str_split_fixed(.$name, pattern='\\.',n=4))
+# remove unnecessary column and rename remaining columns
+df <- df[-1]
+colnames(df) <- c("Site","Plot","name2")
+
+
+# isolate camera data from df, separating the character via _
+df2 <- data.frame(name2 = df[1:3,3]) %>%
+      cbind(str_split_fixed(.$name2, pattern='\\_',n=3))
+# remove unnecessary column and rename remaining columns
+df2 <- df2[-1]
+colnames(df2) <- c("Camera","Date","Time")
+
+
+# isolate data data from df2
+df3 <- data.frame(name3 = df2[1:3,2])
+# extract year, month, and day substrings and rename columns
+df3 <- df3 %>%
+  mutate(Year = c(str_sub(df3[1,1],1,4),str_sub(df3[2,1],1,4),str_sub(df3[3,1],1,4)),
+         Month = c(str_sub(df3[1,1],5,6),str_sub(df3[2,1],5,6),str_sub(df3[3,1],5,6)),
+         Day = c(str_sub(df3[1,1],7,8),str_sub(df3[2,1],7,8),str_sub(df3[3,1],7,8)))
+
+
+# isolate time data from df2
+df4 <- data.frame(name4 = df2[1:3,3])
+# extract hour, minute, and second substrings and rename columns
+df4 <- df4 %>%
+  mutate(Hour = c(str_sub(df4[1,1],1,2),str_sub(df4[2,1],1,2),str_sub(df4[3,1],1,2)),
+         Minute = c(str_sub(df4[1,1],3,4),str_sub(df4[2,1],3,4),str_sub(df4[3,1],3,4)),
+         Second = c(str_sub(df4[1,1],5,6),str_sub(df4[2,1],5,6),str_sub(df4[3,1],5,6)))
+
+```
+
+```{r}
+dataframe <- data.frame(
+  df[1:2],df2[1],df3[2:4], df4[2:4]
+)
+
+dataframe
+```
+
+## Problem 3
+
+The full text from Lincoln's Gettysburg Address is given below. Calculate the mean word length *Note: consider 'battle-field' as one word with 11 letters*).
+
+```{r}
+# saves the Gettysburg address into a string called Gettysburg
+Gettysburg <- 'Four score and seven years ago our fathers brought forth on this
+continent, a new nation, conceived in Liberty, and dedicated to the proposition
+that all men are created equal. Now we are engaged in a great civil war, testing
+whether that nation, or any nation so conceived and so dedicated, can long
+endure. We are met on a great battle-field of that war. We have come to dedicate
+a portion of that field, as a final resting place for those who here gave their
+lives that that nation might live. It is altogether fitting and proper that we
+should do this. But, in a larger sense, we can not dedicate -- we can not
+consecrate -- we can not hallow -- this ground. The brave men, living and dead,
+who struggled here, have consecrated it, far above our poor power to add or
+detract. The world will little note, nor long remember what we say here, but it
+can never forget what they did here. It is for us the living, rather, to be
+dedicated here to the unfinished work which they who fought here have thus far
+so nobly advanced. It is rather for us to be here dedicated to the great task
+remaining before us -- that from these honored dead we take increased devotion
+to that cause for which they gave the last full measure of devotion -- that we
+here highly resolve that these dead shall not have died in vain -- that this
+nation, under God, shall have a new birth of freedom -- and that government of
+the people, by the people, for the people, shall not perish from the earth.'
+
+# removes all non-alphabetic characters, double spaces, and \n from Gettysburg
+Gettysburg <- str_replace_all(Gettysburg, pattern="\\.",replacement="") %>%
+  str_replace_all(pattern="-",replacement="") %>%
+  str_replace_all(pattern=",",replacement="") %>%
+  str_replace_all(pattern="\n",replacement=" ") %>%
+  str_replace_all(pattern="  ",replacement=" ")
+
+# splits the string into each individual word, finds the length of each word, finds the mean of lengths, rounds the mean to 4 decimal places, and saves the mean as a character  
+gettymean <- str_split(Gettysburg, pattern=" ")[[1]] %>%
+  str_length() %>% mean() %>% round(digits = 4) %>% as.character()
+
+# prints out a statement with the mean
+print(str_c("The mean length of words in the Gettysburg address is approximately ", gettymean, "."), sep="", collape=NULL)
+```
+
+
+
+    
